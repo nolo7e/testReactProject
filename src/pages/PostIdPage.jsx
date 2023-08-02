@@ -7,17 +7,16 @@ import Loader from "../components/UI/Loader/Loader";
 const PostIdPage = () => {
     const params = useParams();
     const [post, setPost] = useState({});
-    const [fetchPostById, isLoading, error ] = useFetching(async (id) => {
-        console.log(id);
-        const response = await PostService.getById(id);
+    const [fetchPostById, isLoading, error ] = useFetching(async () => {
+        const response = await PostService.getById(params.id);
         setPost(response.data);
     });
     useEffect(() => {
-        fetchPostById(params.id);
+        fetchPostById();
     }, []);
     return(
         <div>
-            <h1>Вы открыли страницу поста с ID = {params.id}</h1>
+            <h1>Вы открыли страницу поста с ID = {post.id}</h1>
             {isLoading 
             ?   <Loader/> 
             : <div>{post.id}. {post.title}</div>
@@ -25,6 +24,6 @@ const PostIdPage = () => {
             
         </div>
     );
-}
+};
 
 export default PostIdPage;
