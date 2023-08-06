@@ -15,13 +15,9 @@ import Loader from "../components/UI/Loader/Loader";
 import { useFetching } from "../hooks/useFetch";
 import { getPageCount, getPagesArray } from "../utils/pages";
 import Pagination from "../components/UI/pagination/Pagination";
+import { useObserver } from "../hooks/useObserver";
 
 function Posts() {
-  //  const [posts, setPosts] = useState([
-  //   {id:1,title:"a JavaScript",body:"c Description"},
-  //   {id:2,title:"b JavaScript 2",body:"b Description 2"},
-  //   {id:3,title:"c JavaScript 333",body:"a Description 3"},
-  //  ])
   const [posts, setPosts] = useState([]);
   const [filter, setFilter] = useState({sort:'', query:''});
   const [modal, setModal] = useState(false);
@@ -29,13 +25,18 @@ function Posts() {
   const [totalPages, setTotalPages] = useState(0);
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
+  const lastElement = useRef();
 
 
   const [fetchPosts, isPostsLoading, postError] = useFetching(async () => {
       const response = await PostService.getAll(limit, page);
-      setPosts(response.data);
+      setPosts([...posts,...response.data]);
       const totalCount = response.headers['x-total-count'];
       setTotalPages(getPageCount(totalCount, limit));
+  });
+
+  useObserver(lastElement, page < totalPages, isPostsLoading, ()=>{
+    setPage(page + 1);
   });
 
   const changePage = (page) => {
@@ -44,7 +45,7 @@ function Posts() {
 
   useEffect(()=>{
     fetchPosts();
-  }, [page]);
+  }, [page, limit]);
 
   const createPost = (newPost) => {
     setPosts([...posts,newPost]);
@@ -73,13 +74,26 @@ function Posts() {
           filter={filter} 
           setFilter={setFilter} 
       />
+      <MySelect 
+      value={limit}
+      onChange={value => setLimit(value)}
+      defaultValue="Кол-во элементов на странице"
+      options={[
+        {value:5,name:'5'},
+        {value:10,name:'10'},
+        {value:25,name:'25'},
+        {value:-1,name:'Показать все'},
+
+      ]}
+      />
       { postError &&
           <h1>Произошла ошибка! {postError}</h1>
       }
-      {isPostsLoading
-          ? <div style={{display:'flex', justifyContent:'center ', marginTop:50}}><Loader/></div>
-          :<PostList remove={removePost} posts={sortedAndSearchedPosts} title="Список постов про JavaScript"/>
+      {isPostsLoading &&
+        <div style={{display:'flex', justifyContent:'center ', marginTop:50}}><Loader/></div>
       }
+      <PostList remove={removePost} posts={sortedAndSearchedPosts} title="Список постов про JavaScript"/>
+      <div ref={lastElement} style={{height:20, background:'red'}}></div>
       <Pagination 
         page={page} 
         changePage={changePage} 
